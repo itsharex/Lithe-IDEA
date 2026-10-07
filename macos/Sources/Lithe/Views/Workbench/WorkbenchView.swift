@@ -205,6 +205,8 @@ struct WorkbenchView: View {
     @State private var sidebarWidth: CGFloat = 320
     @State private var rightSidebarWidth: CGFloat = 380
     @State private var mavenPaneWidth = CGFloat(WorkbenchLayout.defaultMavenPaneWidth)
+    @State private var branchPopupHeight: CGFloat?
+    @State private var branchPopupWidth = LitheDropdownMetrics.branchMinimumWidth
     @State private var topPaneHeight: CGFloat?
     @State private var isBranchSwitcherPresented = false
     @State private var newBranchReference: GitReference?
@@ -489,6 +491,7 @@ struct WorkbenchView: View {
                     ForEach(model.activeNotifications.reversed()) { notification in
                         WorkbenchNotificationBanner(message: notification.message,
                             collapsedCount: notification.collapsedCount,
+                            occurrenceCount: notification.occurrenceCount,
                             showHistory: { isNotificationCenterPresented = true }) {
                             model.dismissNotification(notification.id)
                         }
@@ -708,7 +711,6 @@ struct WorkbenchView: View {
                                activeBackground: LitheTheme.hoverBackground)
             }
             .buttonStyle(.litheNoPress)
-            .lithePointer()
             .accessibilityIdentifier("project-switcher-\(model.id.uuidString)")
             // Anchor at the full toolbar slot, leaving its margin below the painted button.
             .frame(height: LitheTheme.Metrics.toolbarHeight)
@@ -741,9 +743,13 @@ struct WorkbenchView: View {
                                activeBackground: LitheTheme.hoverBackground)
             }
             .buttonStyle(.litheNoPress)
-            .lithePointer()
             .frame(height: LitheTheme.Metrics.toolbarHeight)
-            .litheDropdown(isPresented: instantBranchSwitcherPresentation, searchOnTyping: true) { branchSwitcherContent }
+            .litheDropdown(isPresented: instantBranchSwitcherPresentation, searchOnTyping: true,
+                           resizableWidth: Binding(get: { branchPopupWidth }, set: { width in
+                               branchPopupWidth = width
+                               saveLayout(sidebarWidth: sidebarWidth, topPaneHeight: topPaneHeight)
+                           }), minimumWidth: LitheDropdownMetrics.branchMinimumWidth,
+                           resizableHeight: $branchPopupHeight, minimumHeight: BranchSwitcherPopover.Metrics.minimumHeight) { branchSwitcherContent }
 
             Spacer(minLength: 22)
 
@@ -1633,6 +1639,8 @@ struct WorkbenchView: View {
         sidebarWidth = CGFloat(layout.sidebarWidth)
         topPaneHeight = layout.topPaneHeight.map { CGFloat($0) }
         mavenPaneWidth = CGFloat(layout.mavenPaneWidth ?? WorkbenchLayout.defaultMavenPaneWidth)
+        branchPopupHeight = layout.branchPopupHeight.map { CGFloat($0) }
+        branchPopupWidth = layout.branchPopupWidth.map { CGFloat($0) } ?? LitheDropdownMetrics.branchMinimumWidth
         didRestoreLayout = true
     }
 
@@ -1642,7 +1650,9 @@ struct WorkbenchView: View {
             WorkbenchLayout(
                 sidebarWidth: Double(sidebarWidth),
                 topPaneHeight: topPaneHeight.map(Double.init),
-                mavenPaneWidth: Double(mavenPaneWidth)
+                mavenPaneWidth: Double(mavenPaneWidth),
+                branchPopupWidth: Double(branchPopupWidth),
+                branchPopupHeight: branchPopupHeight.map { Double($0) }
             ),
             for: workspaceURL
         )
@@ -1656,6 +1666,16 @@ struct WorkbenchView: View {
 
 private struct WorkbenchNotificationCenterView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.locale) private var locale
+
+    /// Repeats of one message stay a single row whose text carries the count.
+    private func message(for notification: WorkbenchNotification) -> String {
+        WorkbenchNotificationPresentation.message(
+            String(localized: String.LocalizationValue(notification.message), locale: locale),
+            occurrenceCount: notification.occurrenceCount,
+            locale: locale
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1706,12 +1726,12 @@ private struct WorkbenchNotificationCenterView: View {
                                     .padding(.top, 2)
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(LocalizedStringKey(notification.message))
+                                    Text(message(for: notification))
                                         .font(LitheTheme.uiFont(size: 12))
                                         .foregroundStyle(LitheTheme.primaryText)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Text(notification.createdAt.formatted(date: .omitted, time: .shortened))
+                                    Text(notification.updatedAt.formatted(date: .omitted, time: .shortened))
                                         .font(LitheTheme.uiFont(size: 10.5))
                                         .foregroundStyle(LitheTheme.tertiaryText)
                                 }

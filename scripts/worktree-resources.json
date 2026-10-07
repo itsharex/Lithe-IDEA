@@ -130,7 +130,7 @@
         "macos/Resources/Fonts",
         "<app-bundle>/Contents/Resources/Fonts"
       ],
-      "identity": "Inter 4.1 (18 static OTF faces; internal version 4.001) and JetBrains Mono 2.304 (16 static TTF faces) source files tracked by Git; independent of platform architecture and build toolchain. Version and read-only file hashes are checked by BundledUIFontTests; packaged presence is checked by verify-macos-package.sh.",
+      "identity": "Inter 4.1 (18 static OTF faces; internal version 4.001) and JetBrains Mono 2.304 (16 static TTF faces) and JetBrains Mono Nerd Font Mono from Nerd Fonts v3.5.1 (four complete patched TTF faces; SHA-256 fixed in Fonts/NOTICE.txt) source files tracked by Git; independent of platform architecture and build toolchain. Version and read-only file hashes are checked by BundledUIFontTests; packaged presence is checked by verify-macos-package.sh.",
       "reason": "Checkout source files through Git; build packaging copies them before signing. Never copy fonts from another worktree artifact or signed/installed bundle, and never modify them at runtime. No resource reuse copy stage is permitted."
     },
     {
@@ -164,6 +164,13 @@
       ],
       "identity": "Generated from current worktree capability records and evidence paths; no sealed version/platform/architecture/toolchain identity stamp",
       "reason": "Always validate and regenerate in the target worktree or CI checkout. Never copy at any reuse stage; source revisions may differ even on the same platform."
+    },
+    {
+      "id": "codex-retry-relay",
+      "reusable": false,
+      "locations": ["<system-temp>/lithe-codex-retry-<UUID>/"],
+      "identity": "First-party embedded source from the current host revision and one Agent launch's native executable/retry budget. Platform chooses the system temporary directory; no reusable version, architecture, toolchain or publication identity stamp.",
+      "reason": "The Agent process owner creates the helper before spawn and removes it on preparation failure, cancellation, launch failure or after stopping the process tree. It contains no credentials. Never copy or share it at any worktree stage; installed adapters, user CLI/configuration and signed bundles stay read-only."
     }
   ]
 }

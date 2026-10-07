@@ -7,6 +7,7 @@ mod debug;
 mod diagnostics;
 mod document;
 mod file_events;
+mod fonts;
 mod host;
 mod html_browser;
 mod language_tools;
@@ -21,6 +22,7 @@ mod run;
 mod secure_storage;
 mod terminal;
 mod watcher;
+mod window_title;
 
 use file_events::TauriFileChangeEmitter;
 use lithe_project::document_watcher::DocumentWatcher;
@@ -92,6 +94,7 @@ fn main() {
             ));
             app.manage(host::FileClipboard::default());
             app.manage(project_windows::ProjectWindows::default());
+            app.manage(window_title::WindowTitles::default());
             app.manage(run::RunProcessManager::default());
             app.manage(debug::DebugAdapterManager::default());
             run::cleanup_legacy_appdata(app.handle());
@@ -105,6 +108,7 @@ fn main() {
             if matches!(event, tauri::WindowEvent::Destroyed) {
                 core::close_ide_hosts(window.label());
                 project_windows::release_window(window.app_handle(), window.label().to_owned());
+                window_title::remove_window(window.app_handle(), window.label());
                 if let Some(watcher) = window.try_state::<Arc<DocumentWatcher>>() {
                     if let Err(error) = watcher.remove_owner(window.label()) {
                         eprintln!("Could not release document watches: {error}");
@@ -166,9 +170,9 @@ fn main() {
             logging::record_startup_milestone,
             host::get_system_theme,
             host::set_native_window_appearance,
-            host::get_system_fonts,
-            host::get_monospace_fonts,
-            host::validate_font,
+            fonts::get_system_fonts,
+            fonts::get_monospace_fonts,
+            fonts::validate_font,
             host::get_bundled_extensions_path,
             host::read_local_file,
             host::read_local_file_bounded,
@@ -189,6 +193,7 @@ fn main() {
             project_windows::claim_project_window,
             project_windows::release_project_window,
             project_windows::release_pending_project_window,
+            window_title::update_window_title_context,
             lsp::lsp_resolve_java_launch,
             lsp::lsp_rebuild_java_index,
             language_tools::get_tool_path,

@@ -192,7 +192,7 @@ SHA-256；Cargo、SwiftPM 和 Bun 使用各自的 lockfile、版本与完整性�
   Intelephense tarball；它只服务当前工作树的插件打包，不能复制解压结果。
 
 Inter 4.1 的 18 个静态 OTF（内部版本 4.001）及许可、JetBrains Mono 2.304 的 16 个静态 TTF、OFL 和作者信息位于 Git 跟踪的
-`macos/Resources/Fonts`。它们与平台架构和工具链无关，随工作树检出，不从另一个
+`macos/Resources/Fonts`。同目录增加 Nerd Fonts v3.5.1 的 JetBrains Mono Nerd Font Mono 四个完整 TTF（常规、粗体、斜体、粗斜体）及 OFL 许可，终端可直接选择这些字型而不依赖用户安装；来源、版本和固定 SHA-256 记录于 `NOTICE.txt`。它们与平台架构和工具链无关，随工作树检出，不从另一个
 工作树的产物或已签名 app 复用；注册表将 `bundled-ui-fonts` 排除，复用脚本拒绝
 复制。打包脚本在签名前复制到 `Contents/Resources/Fonts`，资源门禁检查全部字型；
 `BundledUIFontTests` 检查版本、CoreText process 注册、字号/字重、SwiftUI 字体及
@@ -224,6 +224,14 @@ Inter 4.1 的 18 个静态 OTF（内部版本 4.001）及许可、JetBrains Mono
   `PATH` 和原安装器决定，不属于工作树；包版本、平台与架构由原安装器校验，
   没有工作树构建身份 stamp，任何复制阶段都禁止复用。注册表的
   `excludedResources.agent-cli-runtime` 记录此边界，脚本显式拒绝选择它。
+
+- Codex 短重连配置 helper：`<system-temp>/lithe-codex-retry-<UUID>/` 由单次
+  Agent 连接独占，内容来自当前 Rust Host 内嵌的一方源码，原生 CLI 路径和预算
+  经非敏感环境字段传递，密钥仍只走标准输入。系统临时目录由平台解析；准备、
+  启动失败、取消或进程树结束后删除。它没有可复用的版本、平台、架构、工具链
+  stamp，任何复制阶段都不得共享；`excludedResources.codex-retry-relay` 走脚本
+  的排除路由。helper 不修改已安装适配器、用户配置、app bundle 或 Windows 安装
+  目录，因此不改变代码签名和 Sparkle delta 的发布基线。
 
 - Agent 历史注释：平台偏好设置键 `lithe.agent-history.v1.<workspace-agent-digest>` 保存收藏、自定义标题和隐藏状态，按标准化工作区与 Agent ID 隔离。它是用户可变状态，不受版本、平台、架构或工具链构建身份约束，不存在可验证的构建 stamp；Markdown 导出写到用户选择的位置。两者都禁止在任何复制阶段跨工作树复用，`excludedResources.agent-history-metadata` 由资源脚本显式拒绝。
 

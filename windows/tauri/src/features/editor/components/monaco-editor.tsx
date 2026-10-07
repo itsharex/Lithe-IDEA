@@ -1,3 +1,5 @@
+import { useDebuggerStore } from "@/features/debugger/stores/debugger.store";
+import { bindMonacoDebugDecorations } from "@/features/debugger/services/monaco-debug-decorations";
 import { runEditorCommand, type EditorCommand } from "@lithe/editor/editor-commands";
 import "../engines/monaco/monaco-environment";
 import "monaco-editor/min/vs/editor/editor.main.css";
@@ -70,6 +72,7 @@ import { LspOperationLog } from "@/platform/lsp-session-lifecycle";
 import { isNativeTextInputTarget } from "@/utils/keyboard/text-input-target";
 import { getRelativePath, pathStartsWithRoot } from "@/utils/path-helpers";
 import EditorContextMenu from "../context-menu/context-menu";
+import { EDITOR_CONSTANTS } from "../config/constants";
 import { JavaRunMarkerMenu } from "../context-menu/java-run-marker-menu";
 import { useBufferStore } from "../stores/buffer.store";
 import { editorBufferSurfacesEqual, selectEditorBufferSurface } from "../stores/buffer-metadata";
@@ -998,6 +1001,7 @@ export function MonacoEditor({
       stickyScroll: { enabled: editorStickyScroll },
       bracketPairColorization: { enabled: editorBracketPairColorization },
       smoothScrolling: editorSmoothScrolling,
+      mouseWheelScrollSensitivity: EDITOR_CONSTANTS.MOUSE_WHEEL_SCROLL_SENSITIVITY,
       scrollBeyondLastLine: editorScrollBeyondLastLine,
       padding: { bottom: getEditorBottomScrollPadding(container.clientHeight) },
       lineNumbers: lineNumbers ? lineNumberFormatter : "off",
@@ -1229,6 +1233,7 @@ export function MonacoEditor({
     window.addEventListener("keydown", handleWindowSelectAllShortcut, true);
 
     const disposables = [
+      bindMonacoDebugDecorations(editor, filePath),
       editor.onContextMenu((event) => {
         event.event.preventDefault();
         event.event.stopPropagation();
@@ -1359,6 +1364,20 @@ export function MonacoEditor({
             );
             return;
           }
+        }
+        if (
+          filePath.toLowerCase().endsWith(".java") &&
+          !editor.getRawOptions().readOnly &&
+          event.target.type === monacoEditor.MouseTargetType.GUTTER_GLYPH_MARGIN &&
+          event.target.position &&
+          mouseEvent.leftButton
+        ) {
+          mouseEvent.preventDefault();
+          mouseEvent.stopPropagation();
+          useDebuggerStore
+            .getState()
+            .actions.toggleBreakpoint(filePath, event.target.position.lineNumber - 1);
+          return;
         }
         if (
           isEditorGoToDefinitionModifierClick(mouseEvent) &&
@@ -2208,6 +2227,7 @@ export function MonacoEditor({
       stickyScroll: { enabled: editorStickyScroll },
       bracketPairColorization: { enabled: editorBracketPairColorization },
       smoothScrolling: editorSmoothScrolling,
+      mouseWheelScrollSensitivity: EDITOR_CONSTANTS.MOUSE_WHEEL_SCROLL_SENSITIVITY,
       scrollBeyondLastLine: editorScrollBeyondLastLine,
       renderWhitespace: renderWhitespace === "none" ? "none" : renderWhitespace,
       wordWrap: wordWrap ? "on" : "off",

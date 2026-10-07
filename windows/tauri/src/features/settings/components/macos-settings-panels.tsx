@@ -1,3 +1,7 @@
+import { FontSelector } from "./font-selector";
+import { MIN_EDITOR_FONT_SIZE, MAX_EDITOR_FONT_SIZE } from "../lib/editor-font-size";
+import { buildFontFamilyStack } from "../lib/font-family-resolution";
+import { DEFAULT_MONO_FONT_FAMILY } from "../config/typography-defaults";
 import { AiCommitSettingsPanel } from "./ai-commit-settings-panel";
 import { AISettings } from "./tabs/ai-settings";
 import { getVersion } from "@tauri-apps/api/app";
@@ -19,7 +23,9 @@ import {
 import { useTerminalShellsStore } from "@/features/terminal/stores/shells.store";
 import { useTranslation } from "@/i18n/locale-provider";
 import { Button } from "@/ui/button";
+import NumberInput from "@/ui/number-input";
 import Switch from "@/ui/switch";
+import { SETTINGS_CONTROL_WIDTHS } from "./settings-section";
 import { LogSettingsPanel } from "./log-settings-panel";
 import { MavenSettingsPanel } from "./tabs/maven-settings-panel";
 import { GitSettings } from "./tabs/git-settings";
@@ -295,16 +301,58 @@ function EditorPanel() {
   return (
     <div className="flex flex-col gap-4">
       <SettingsGroup title={t("settings.mac.display")}>
-        <SettingsRow label={t("settings.mac.fontSize")}>
-          <input
-            type="number"
-            min={10}
-            max={22}
-            className={`${controlClassName} w-20 text-right`}
-            value={settings.fontSize}
-            onChange={(event) => void updateSetting("fontSize", Number(event.target.value))}
+        <SettingsRow
+          label={t("settings.editor.fontFamily")}
+          description={t("settings.editor.fontFamilyDescription")}
+        >
+          <FontSelector
+            value={settings.fontFamily}
+            onChange={(family) => void updateSetting("fontFamily", family)}
+            monospaceOnly={false}
+            aria-label={t("settings.editor.fontFamily")}
+            className="w-64 max-w-full"
           />
         </SettingsRow>
+        <SettingsRow
+          label={t("settings.mac.fontSize")}
+          description={t("settings.editor.fontSizeDescription")}
+        >
+          <NumberInput
+            min={MIN_EDITOR_FONT_SIZE}
+            max={MAX_EDITOR_FONT_SIZE}
+            step={1}
+            size="md"
+            className={SETTINGS_CONTROL_WIDTHS.numberCompact}
+            aria-label={t("settings.mac.fontSize")}
+            value={settings.fontSize}
+            onChange={(value) => void updateSetting("fontSize", value)}
+          />
+        </SettingsRow>
+        <SettingsRow
+          label={t("settings.editor.fontLigatures")}
+          description={t("settings.editor.fontLigaturesDescription")}
+        >
+          <Switch
+            checked={settings.editorFontLigatures}
+            onChange={(enabled) => void updateSetting("editorFontLigatures", enabled)}
+            aria-label={t("settings.editor.fontLigatures")}
+            size="sm"
+          />
+        </SettingsRow>
+        <pre
+          aria-label={t("settings.editor.fontPreview")}
+          className="mx-3 overflow-x-auto rounded-lg bg-secondary/40 p-3"
+          style={{
+            fontFamily: buildFontFamilyStack(settings.fontFamily, DEFAULT_MONO_FONT_FAMILY),
+            fontSize: settings.fontSize,
+            fontVariantLigatures: settings.editorFontLigatures ? "normal" : "none",
+            fontFeatureSettings: settings.editorFontLigatures
+              ? '\"liga\" 1, \"calt\" 1'
+              : '\"liga\" 0, \"calt\" 0',
+          }}
+        >
+          {"const ready = a != b && count <= 10;\n(a, b) => a === b   中文字体预览 0123456789"}
+        </pre>
         <SettingsRow label={t("settings.mac.showCodeVision")}>
           <Switch
             checked={settings.codeLens}
